@@ -1,0 +1,116 @@
+name: ci-cd
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/ci-cd.yaml
+      - src/**
+      - pyproject.toml
+      - uv.lock
+  release:
+    types:
+      - published
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-tests:
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.8.23"
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install the project
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+          PIP_EXTRA_INDEX_URL: ""
+        run: |
+          uv sync --all-groups --all-extras --frozen
+
+      - name: Check uv build
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+          PIP_EXTRA_INDEX_URL: ""
+        run: uv build
+
+      - name: Quality checks
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+          PIP_EXTRA_INDEX_URL: ""
+        run: uv run pre-commit run --all-files
+
+      - name: Run tests
+        if: matrix.python != '3.11'
+        run: uv run pytest src/tests/ -vv
+
+      - name: Run tests with coverage
+        if: matrix.python == '3.11'
+        run: uv run pytest src/tests/ --cov=leap --cov-report=term-missing --cov-report=html:/home/runner/cov_html --cov-report=xml
+
+      - name: Archive code coverage results
+        if: matrix.python == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: /home/runner/cov_html
+
+      - name: Checkout to current branch for coverage update
+        if: github.event_name == 'pull_request' && matrix.python == '3.11'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate coverage status
+        if: github.event_name == 'pull_request' && matrix.python == '3.11'
+        run: |
+          set -x
+          total_cov=$(grep -Eo '<span class="pc_cov">[0-9]+%</span>' /home/runner/cov_html/index.html | grep -oe '\([0-9.]*\)' || echo "0")
+          echo "Coverage: $total_cov%"
+          if [ "$total_cov" -le "50" ] ; then
+            COLOR=red
+          elif [ "$total_cov" -ge "90" ] ; then
+            COLOR=green
+          else
+            COLOR=orange
+          fi
+          echo "Badge color: $COLOR"
+          echo "https://img.shields.io/badge/coverage-${total_cov}%25-${COLOR}"
+          mkdir -p badges
+          curl "https://img.shields.io/badge/coverage-${total_cov}%25-${COLOR}" > badges/cov_badge.svg
+          echo "" >> badges/cov_badge.svg
+
+      - name: Commit coverage badge
+        if: github.event_name == 'pull_request' && matrix.python == '3.11'
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: badges/cov_badge.svg
+          default_author: github_actor
+          pull: "--no-rebase"
+          message: "update coverage badge"
