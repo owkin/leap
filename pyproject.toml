@@ -1,0 +1,222 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]
+
+[tool.hatch.build.targets.sdist]
+include = ["README.md", "src/leap"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/leap"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/leap/_version.py"
+
+[project]
+name = "owkin-leap"
+dynamic = ["version"]
+description = "Repository for LEAP: Layered Ensemble of Autoencoders and Predictors."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+            {name="Gaetan Dissez",email="gaetan.dissez@owkin.com"},
+            {name="Barbara Bodinier",email="barbara.bodinier@owkin.com"},
+            {name="Antonin Dauvin",email="antonin.dauvin@owkin.com"},
+            ]
+keywords = [
+    "machine-learning",
+    "drug-discovery",
+    "autoencoder",
+    "ensemble-learning",
+    "bioinformatics",
+    "genomics",
+    "cancer-research",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "numpy>=2.0.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "torch>=2.0.0",
+]
+
+[project.urls]
+Source = "https://github.com/owkin/leap"
+Issues = "https://github.com/owkin/leap/issues"
+
+
+[dependency-groups]
+dev = [
+    "mypy>=1.8.0",
+    "pre-commit>=3.5.0",
+    "ruff>=0.3.1",
+    "pydoclint>=0.6.4",
+]
+tests = [
+    "pytest>=8.0.2",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+]
+notebooks = [
+    "notebook>=7.3.2",
+    "nbconvert>=6.5.4",
+    "jupyterlab>=4.0.2",
+    "jupytext>=1.17.2",
+    "ipython>=8.0.0",
+]
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "__version__.py" }]
+
+
+[tool.ruff]
+exclude = [
+  ".git",
+  ".github",
+  ".dvc",
+  "__pycache__",
+  ".venv",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".pytest_cache",
+  ".eggs",
+  ".git-rewrite",
+  ".pytype",
+  "__pypackages__",
+  "_build",
+  "build",
+  "dist",
+]
+
+line-length = 120
+target-version = "py311"
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+ignore = [
+  "B008",  # do not perform function calls in argument defaults
+  "C901",  # too complex
+  "D105",  # undocumented magic method
+  "D107",  # Missing docstring in `__init__`
+  "E731",  # lambda-assignment
+  "PLR0904", # too many public methods
+  "PLR0913", # too many arguments
+  "PLR2004", # magic value comparison
+  "B019", # use of cache methods
+  "B009", # getattr with constant value
+  "N812", # lowercase imported as non constant
+  "PLW2901", # loop variable overwritten by assignment
+  "PT011", # broad pytest errors
+]
+
+select = [
+  "D",   # pydocstyle
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "N",   # pep8-naming conventions
+  "C",   # flake8-comprehensions
+  "B",   # flake8-bugbear
+  "PL",  # pylint
+  "PT",  # flake8-pytest-style
+  "C90", # mccabe included in flake8
+  "ASYNC", # flake8-async
+  "UP",  # pyupgrade
+  "RUF", # ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["leap"]
+lines-after-imports = 2
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["X_[a-zA-Z]*","a","b","c","i","j","k","n","p","q","r","s","t","u","v","w","x","y","z","id","_","df","X","mu"]
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-names-type = "csv"
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_errors = false
+files = ["src/"]
+mypy_path = ["src"]
+
+# Enforce typing on public functions
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+
+# Additional strict options
+explicit_package_bases = true
+ignore_missing_imports = true
+disallow_untyped_calls = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["leap"]
+
+[tool.coverage.report]
+omit = []
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=leap",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]

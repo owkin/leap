@@ -1,0 +1,63 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.34.0
+    hooks:
+      - id: check-github-actions
+      - id: check-github-workflows
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+        exclude: \.ipynb$
+      - id: check-toml
+        name: Validate TOML syntax
+      - id: check-yaml
+        name: Validate YAML syntax
+      - id: check-json
+        name: Validate JSON syntax
+      - id: check-merge-conflict
+        name: Check for merge conflict markers
+      - id: check-added-large-files
+        name: Prevent large files from being committed
+        args: ['--maxkb=500']
+      - id: debug-statements
+        name: Check for debugger imports and breakpoint()
+      - id: detect-private-key
+        name: Detect private keys
+  - repo: local
+    hooks:
+      - id: ruff-fmt
+        name: Format using ruff
+        language: system
+        types: [python]
+        pass_filenames: false
+        entry: uv run ruff format src/ --exclude src/leap/_version.py
+      - id: ruff-lint
+        name: Lint using ruff
+        language: system
+        types: [python]
+        pass_filenames: false
+        entry: uv run ruff check src/ --fix --exclude src/leap/_version.py
+      - id: mypy
+        name: Static type checking using mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        entry: uv run mypy src/ --exclude src/leap/_version.py
+      - id: pydoclint
+        name: Docstring linting with pydoclint
+        language: system
+        types: [python]
+        pass_filenames: false
+        entry: uv run pydoclint --check-class-attributes=False --style=numpy --exclude '.*/_version\.py' src/leap/
+      - id: jupyter-nb-clear-output
+        name: Clear Jupyter notebook outputs
+        files: \.ipynb$
+        language: system
+        entry: uv run jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
