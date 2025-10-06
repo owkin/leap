@@ -1,6 +1,19 @@
 # Auto-generated version file
 src/leap/_version.py
 
+# Data, models, and results (user-specific)
+data/*
+!data/.gitkeep
+!data/README.md
+
+models/*
+!models/.gitkeep
+!models/README.md
+
+results/*
+!results/.gitkeep
+!results/README.md
+
 # Python
 __pycache__/
 *.py[cod]

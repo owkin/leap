@@ -156,7 +156,7 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["leap"]
+known-first-party = ["leap", "configs"]
 lines-after-imports = 2
 
 [tool.ruff.lint.pep8-naming]
@@ -171,8 +171,8 @@ convention = "numpy"
 [tool.mypy]
 python_version = "3.11"
 ignore_errors = false
-files = ["src/"]
-mypy_path = ["src"]
+files = ["src/", "configs/", "scripts/"]
+mypy_path = ["src", "configs", "scripts"]
 
 # Enforce typing on public functions
 disallow_incomplete_defs = true
