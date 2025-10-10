@@ -9,7 +9,7 @@ import sklearn.decomposition
 from . import RepresentationModelBase
 
 
-class PCA(RepresentationModelBase, sklearn.decomposition.PCA):
+class PCA(sklearn.decomposition.PCA, RepresentationModelBase):
     """Principal Component Analysis for dimensionality reduction.
 
     This class extends sklearn's PCA with a consistent interface for LEAP, including support for pandas DataFrames.

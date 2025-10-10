@@ -230,6 +230,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
+    "-p", "no:threadexception",  # Prevent segfaults with PyTorch tests
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

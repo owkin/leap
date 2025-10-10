@@ -60,7 +60,7 @@ class OmicsPreprocessor:
         if gene_list_source:
             if isinstance(gene_list_source, str):
                 # Path to file containing the list of genes
-                self.gene_list = pd.read_csv(gene_list_source).iloc[:, 0].tolist()
+                self.gene_list = pd.read_csv(gene_list_source, header=None).iloc[:, 0].tolist()
             else:
                 self.gene_list = gene_list_source
 

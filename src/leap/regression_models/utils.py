@@ -42,9 +42,9 @@ class SpearmanLoss(nn.Module):
         y_pred_mean = torch.mean(y_pred)
         cov = torch.mean((y_true - y_true_mean) * (y_pred - y_pred_mean))
 
-        # Compute the standard deviations
-        y_true_std = torch.std(y_true)
-        y_pred_std = torch.std(y_pred)
+        # Compute the standard deviations (use population std, correction=0)
+        y_true_std = torch.std(y_true, correction=0)
+        y_pred_std = torch.std(y_pred, correction=0)
 
         # Compute the correlation
         spearman_corr = cov / (y_true_std * y_pred_std + 1e-8)  # Add epsilon to avoid division by zero
