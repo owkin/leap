@@ -57,7 +57,15 @@ dependencies = [
     "numpy>=2.0.0",
     "pandas>=2.0.0",
     "scikit-learn>=1.3.0",
+    "scipy>=1.16.0",
     "torch>=2.0.0",
+    "loguru>=0.7.0",
+    "skglm<0.4", # Breaking changes introduced in the 0.4 version in Apr 25
+    "ray>=2.20.0",
+    "tqdm>=4.0.0",
+    "lightgbm>=4.1.0",
+    "pyarrow>=19.0.0",
+    "ml-collections>=1.1.0",
 ]
 
 [project.urls]
@@ -195,7 +203,20 @@ omit = []
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
+    "import ",
+    "from .* import ",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "raise AssertionError",
+    "def __repr__",
+    "def __str__",
+    "__all__",
 ]
+
+[tool.pydoclint]
+should-document-star-arguments=false
 
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]

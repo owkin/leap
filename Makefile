@@ -1,4 +1,4 @@
-.PHONY: help install checks testing clean
+.PHONY: help install checks tests clean
 
 UV_VERSION := 0.8.23
 
@@ -38,7 +38,7 @@ checks: ## Run pre-commit checks on all files
 	@echo "🔍 Running checks..."
 	@PIP_INDEX_URL=https://pypi.org/simple PIP_EXTRA_INDEX_URL="" uv run pre-commit run --all-files
 
-testing: ## Run tests with coverage
+tests: ## Run tests with coverage
 	@echo "🧪 Running tests..."
 	@uv run pytest src/tests/ -vv
 
