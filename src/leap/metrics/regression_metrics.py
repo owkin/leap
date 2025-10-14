@@ -38,21 +38,29 @@ def performance_metric_wrapper(
     float
         Performance metric.
     """
-    # Exclude missing true labels
-    y_true = y_true.dropna()
-    y_pred = y_pred[y_true.index]
+    # Exclude missing true labels and align predictions using a boolean mask to handle non-unique indexes correctly.
+    mask = y_true.notna()
+    y_true = y_true[mask]
+    y_pred = y_pred[mask]
 
-    # Compute the performance metric
-    if per_perturbation:
-        # Calculate the average per-perturbation metric
-        return (
-            pd.DataFrame({"y_true": y_true, "y_pred": y_pred})
-            .groupby("perturbation")
-            .apply(lambda x: performance_metric(x["y_true"].to_numpy(), x["y_pred"].to_numpy(), metric=metric))
-        ).mean()
+    if not per_perturbation:
+        return performance_metric(y_true.to_numpy(), y_pred.to_numpy(), metric)
 
-    # Calculate the overall metric
-    return performance_metric(y_true.to_numpy(), y_pred.to_numpy(), metric)
+    # For per-perturbation metrics, we group both series by the 'perturbation' index level and calculate the metric for
+    # each group separately. This avoids creating an intermediate DataFrame, which can cause errors with non-unique
+    # multi-indexes.
+    grouped_true = y_true.groupby(level="perturbation")
+    grouped_pred = y_pred.groupby(level="perturbation")
+
+    metric_values = [
+        performance_metric(
+            grouped_true.get_group(name).to_numpy(), grouped_pred.get_group(name).to_numpy(), metric=metric
+        )
+        for name in grouped_true.groups
+    ]
+
+    # Return the average of the per-perturbation metrics
+    return np.mean(metric_values).item()
 
 
 def performance_metric(y_true: np.ndarray, y_pred: np.ndarray, metric: RegressionMetricType = "spearman") -> float:

@@ -29,7 +29,28 @@ make tests  # Run tests with coverage
 
 ## Usage
 
-<!-- Usage instructions and examples coming soon -->
+### Clean up temporary files
+```bash
+make clean
+```
+Removes all temporary files, caches, and build artifacts.
+
+### Clean up data and results
+```bash
+make clean-data
+```
+Removes all processed data, trained models, and results. **Warning: This action cannot be undone!**
+
+### Run the complete LEAP pipeline
+```bash
+sh run_pipeline.sh
+```
+Runs the full LEAP pipeline end-to-end:
+1. Pretrain representations
+2. Train regression heads for multiple tasks, models, and seeds
+3. Ensemble predictions
+
+The pipeline is configured to run on task 1 with the `mae_ps_enet` model across 5 different seeds.
 
 ## Citation
 

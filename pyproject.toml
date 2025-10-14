@@ -60,7 +60,7 @@ dependencies = [
     "scipy>=1.16.0",
     "torch>=2.0.0",
     "loguru>=0.7.0",
-    "skglm<0.4", # Breaking changes introduced in the 0.4 version in Apr 25
+    "skglm>0.4.0",
     "ray>=2.20.0",
     "tqdm>=4.0.0",
     "lightgbm>=4.1.0",
@@ -145,6 +145,9 @@ ignore = [
   "PLW2901", # loop variable overwritten by assignment
   "PT011", # broad pytest errors
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["N999"]  # Allow numbered script names for workflow organization
 
 select = [
   "D",   # pydocstyle

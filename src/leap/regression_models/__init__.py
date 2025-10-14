@@ -1,25 +1,20 @@
 """Prediction models for LEAP."""
 
-from typing import Any, Protocol, runtime_checkable
+from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 import pandas as pd
-from lightgbm import LGBMRegressor
-from skglm import ElasticNet
-
-from .knn_regressor import KnnRegressor
-from .mlp_regressor import TorchMLPRegressor
-from .utils import AlphaGridElasticNet
 
 
-@runtime_checkable
-class RegressionModel(Protocol):
-    """Protocol defining the interface for regression models in LEAP.
+class RegressionModel(ABC):
+    """Abstract base class defining the interface for regression models in LEAP.
 
-    All regression models must implement fit(), predict() and set_params() methods with these signatures. This protocol
-    works with external libraries (ElasticNet, LGBMRegressor) and custom implementations alike.
+    All regression models must inherit from this class and implement fit(), predict(),
+    set_params(), and get_params() methods with these signatures.
     """
 
+    @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series | pd.DataFrame, **kwargs: Any) -> None:
         """Fit the regression model.
 
@@ -32,6 +27,7 @@ class RegressionModel(Protocol):
         """
         ...
 
+    @abstractmethod
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Make predictions using the trained model.
 
@@ -47,6 +43,7 @@ class RegressionModel(Protocol):
         """
         ...
 
+    @abstractmethod
     def set_params(self, **kwargs: Any) -> "RegressionModel":
         """Set parameters for this estimator.
 
@@ -57,6 +54,7 @@ class RegressionModel(Protocol):
         """
         ...
 
+    @abstractmethod
     def get_params(self, deep: bool = True) -> dict[str, Any]:
         """Get parameters for this estimator.
 
@@ -71,6 +69,14 @@ class RegressionModel(Protocol):
             Parameter names mapped to their values.
         """
         ...
+
+
+# Import classes that depend on RegressionModel AFTER defining it
+from .elastic_net import ElasticNet  # noqa: E402
+from .knn_regressor import KnnRegressor  # noqa: E402
+from .lgbm_regressor import LGBMRegressor  # noqa: E402
+from .mlp_regressor import TorchMLPRegressor  # noqa: E402
+from .utils import AlphaGridElasticNet  # noqa: E402
 
 
 __all__ = [

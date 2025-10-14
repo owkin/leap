@@ -189,9 +189,10 @@ class PreclinicalDataset:
         )
 
         # Keep only the listed genes if specified
-        self._use_gene_list(df_rnaseq)
+        df_rnaseq = self._keep_gene_list(df_rnaseq)
         # Add rnaseq suffix
-        self.df_rnaseq = df_rnaseq.add_suffix("_rnaseq")
+        df_rnaseq = df_rnaseq.add_suffix("_rnaseq")
+        self.df_rnaseq = df_rnaseq
 
     def _load_labels(self) -> None:
         """Load gene essentiality labels from DepMap."""
@@ -211,9 +212,9 @@ class PreclinicalDataset:
             df_labels = pd.DataFrame(scaler.fit_transform(df_labels), columns=df_labels.columns, index=df_labels.index)
 
         # Keep only the listed labels
-        self._use_label_list(df_labels)
+        df_labels = self._keep_label_list(df_labels)
         # Keep only samples with at least one label
-        df_labels.dropna(how="all", inplace=True)
+        df_labels = df_labels.dropna(how="all")
         self.df_labels = df_labels
 
     def _load_fingerprints(self) -> None:
@@ -232,20 +233,23 @@ class PreclinicalDataset:
 
         logger.info(f"Loaded fingerprints for {self.df_fingerprints.shape[0]} genes.")
 
-    def _use_label_list(self, df_labels: pd.DataFrame) -> None:
+    def _keep_label_list(self, df_labels: pd.DataFrame) -> pd.DataFrame:
         """Only keep the listed labels."""
         if self.use_label_list is not None:
             label_list = list(pd.read_csv(self.use_label_list, header=None).iloc[:, 0])
             label_list = [name.lower() for name in label_list]
             df_labels = df_labels.loc[:, df_labels.columns.isin(label_list)]
-        self.df_labels = df_labels
+            logger.info(f"Filtered labels to keep only {len(df_labels.columns)} labels.")
+        return df_labels
 
-    def _use_gene_list(self, df_rnaseq: pd.DataFrame) -> None:
+    def _keep_gene_list(self, df_rnaseq: pd.DataFrame) -> pd.DataFrame:
         """Only keep the listed RNASeq genes."""
         if self.use_gene_list is not None:
             # Load the gene list from the specified file
             gene_list_rnaseq = pd.read_csv(self.use_gene_list, header=None).iloc[:, 0].str.removesuffix("_rnaseq")
             df_rnaseq = df_rnaseq.loc[:, df_rnaseq.columns.isin(gene_list_rnaseq)]
+            logger.info(f"Filtered genes to keep only {len(df_rnaseq.columns)} genes.")
+        return df_rnaseq
 
     def _get_common_samples(self, *dfs: pd.DataFrame) -> list[str]:
         """Get the common samples between dataframes."""
@@ -290,7 +294,7 @@ class PreclinicalDataset:
         self.df_labels = self.df_labels.loc[common_samples]
         self.df_rnaseq = self.df_rnaseq.loc[common_samples]
 
-        if self.min_n_label > 0:
+        if self.min_n_label > 0 and self.label is not None:
             # Keep only labels with at least min_n_label non-missing values
             self.df_labels.dropna(axis=1, thresh=self.min_n_label, inplace=True)
             # Warning if df_labels is empty
@@ -301,11 +305,6 @@ class PreclinicalDataset:
 
     def _filter_tissues(self) -> None:
         """Filter samples based on tissues_to_keep and tissues_to_exclude."""
-
-        def rename_for_code(x: str) -> str:
-            """Normalize tissue names."""
-            return str(x).lower().replace(" ", "_").replace("-", "_")
-
         # Keep only samples with a tissue in tissues_to_keep
         if self.tissues_to_keep != "all":
             self.df_sample_metadata = self.df_sample_metadata.dropna(subset="tissue")
@@ -377,3 +376,8 @@ class PreclinicalDataset:
             self.df_rnaseq = self.df_rnaseq[common_columns]
             data.df_rnaseq = data.df_rnaseq[common_columns]
             self.df_rnaseq = pd.concat([self.df_rnaseq, data.df_rnaseq], axis=0)
+
+
+def rename_for_code(x: str) -> str:
+    """Normalize tissue names."""
+    return str(x).lower().replace(" ", "_").replace("-", "_")

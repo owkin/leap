@@ -5,8 +5,159 @@ import pandas as pd
 import pytest
 import torch
 
-from leap.regression_models import KnnRegressor, TorchMLPRegressor
+from leap.regression_models import ElasticNet, KnnRegressor, LGBMRegressor, RegressionModel, TorchMLPRegressor
 from leap.regression_models.utils import SpearmanLoss
+
+
+class TestRegressionModelABC:
+    """Test RegressionModel abstract base class."""
+
+    def test_cannot_instantiate_abc(self):
+        """Test that RegressionModel ABC cannot be instantiated."""
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            RegressionModel()
+
+    def test_all_models_have_required_methods(self):
+        """Test that all regression models implement required methods."""
+        required_methods = ["fit", "predict", "set_params", "get_params"]
+
+        models = [
+            ElasticNet(alpha=1.0, l1_ratio=0.5),
+            LGBMRegressor(n_estimators=10, verbose=-1),
+            TorchMLPRegressor(hidden_layer_sizes=(10,), max_epochs=5),
+            KnnRegressor(n_sample_neighbors=5, weights="uniform"),
+        ]
+
+        for model in models:
+            for method in required_methods:
+                assert hasattr(model, method), f"{type(model).__name__} missing {method} method"
+                assert callable(getattr(model, method)), f"{type(model).__name__}.{method} is not callable"
+
+
+class TestElasticNetWrapper:
+    """Test ElasticNet wrapper class."""
+
+    @pytest.fixture
+    def sample_data(self):
+        """Create sample data for testing."""
+        np.random.seed(42)
+        X = pd.DataFrame(np.random.randn(100, 10), columns=[f"feature_{i}" for i in range(10)])
+        y = pd.Series(np.random.randn(100))
+        return X, y
+
+    def test_elastic_net_initialization(self):
+        """Test ElasticNet initialization."""
+        model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+        assert model.l1_ratio == 0.5
+
+    def test_elastic_net_fit(self, sample_data):
+        """Test ElasticNet fit method with pandas DataFrames."""
+        X, y = sample_data
+        model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+        model.fit(X, y)
+        # Should not raise an error
+
+    def test_elastic_net_predict(self, sample_data):
+        """Test ElasticNet predict method."""
+        X, y = sample_data
+        model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+        model.fit(X, y)
+
+        X_test = X[:10]
+        predictions = model.predict(X_test)
+
+        assert predictions.shape == (10,)
+        assert isinstance(predictions, np.ndarray)
+
+    def test_elastic_net_get_set_params(self):
+        """Test get_params and set_params methods."""
+        model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+
+        params = model.get_params()
+        assert params["alpha"] == 1.0
+        assert params["l1_ratio"] == 0.5
+
+        model.set_params(alpha=2.0)
+        assert model.get_params()["alpha"] == 2.0
+
+    def test_elastic_net_with_series_and_dataframe(self, sample_data):
+        """Test ElasticNet works with both Series and DataFrame targets."""
+        X, y = sample_data
+        model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+
+        # Test with Series
+        model.fit(X, y)
+        predictions = model.predict(X[:5])
+        assert predictions.shape == (5,)
+
+        # Test with DataFrame (single column)
+        y_df = pd.DataFrame(y, columns=["target"])
+        model.fit(X, y_df)
+        predictions = model.predict(X[:5])
+        assert predictions.shape == (5,)
+
+
+class TestLGBMRegressorWrapper:
+    """Test LGBMRegressor wrapper class."""
+
+    @pytest.fixture
+    def sample_data(self):
+        """Create sample data for testing."""
+        np.random.seed(42)
+        X = pd.DataFrame(np.random.randn(100, 10), columns=[f"feature_{i}" for i in range(10)])
+        y = pd.Series(np.random.randn(100))
+        return X, y
+
+    def test_lgbm_initialization(self):
+        """Test LGBMRegressor initialization."""
+        LGBMRegressor(n_estimators=10, verbose=-1)
+        # Should initialize without error
+
+    def test_lgbm_fit(self, sample_data):
+        """Test LGBMRegressor fit method with pandas DataFrames."""
+        X, y = sample_data
+        model = LGBMRegressor(n_estimators=10, verbose=-1)
+        model.fit(X, y)
+        # Should not raise an error
+
+    def test_lgbm_predict(self, sample_data):
+        """Test LGBMRegressor predict method."""
+        X, y = sample_data
+        model = LGBMRegressor(n_estimators=10, verbose=-1)
+        model.fit(X, y)
+
+        X_test = X[:10]
+        predictions = model.predict(X_test)
+
+        assert predictions.shape == (10,)
+        assert isinstance(predictions, np.ndarray)
+
+    def test_lgbm_get_set_params(self):
+        """Test get_params and set_params methods."""
+        model = LGBMRegressor(n_estimators=10, verbose=-1)
+
+        params = model.get_params()
+        assert params["n_estimators"] == 10
+        assert params["verbose"] == -1
+
+        model.set_params(n_estimators=20)
+        assert model.get_params()["n_estimators"] == 20
+
+    def test_lgbm_with_series_and_dataframe(self, sample_data):
+        """Test LGBMRegressor works with both Series and DataFrame targets."""
+        X, y = sample_data
+        model = LGBMRegressor(n_estimators=10, verbose=-1)
+
+        # Test with Series
+        model.fit(X, y)
+        predictions = model.predict(X[:5])
+        assert predictions.shape == (5,)
+
+        # Test with DataFrame (single column)
+        y_df = pd.DataFrame(y, columns=["target"])
+        model.fit(X, y_df)
+        predictions = model.predict(X[:5])
+        assert predictions.shape == (5,)
 
 
 class TestKnnRegressor:

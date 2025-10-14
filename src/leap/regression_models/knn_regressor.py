@@ -1,5 +1,7 @@
 """KNN Regression Model."""
 
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
@@ -7,8 +9,11 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.neighbors import KNeighborsRegressor
 
+# RegressionModel is defined in __init__.py before this module is imported
+from leap.regression_models import RegressionModel
 
-class KnnRegressor(BaseEstimator):
+
+class KnnRegressor(BaseEstimator, RegressionModel):
     """KNN Regression Model.
 
     This KNN model is using the KNeighborsRegressor from scikit-learn in a way that allows having nan values in the

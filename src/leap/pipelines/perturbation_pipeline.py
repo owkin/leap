@@ -364,7 +364,10 @@ class PerturbationPipeline:
             """Wrap _fit_one_perturbation to flag it with ray.remote()."""
             return _fit_one_perturbation(*args, **kwargs)
 
-        ray.init(ignore_reinit_error=True)
+        # Initialize Ray only if not already initialized
+        if not ray.is_initialized():
+            ray.init(ignore_reinit_error=True)
+
         futures = {
             label: _fit_one_perturbation_with_ray.remote(
                 x_data=X,
@@ -437,7 +440,7 @@ class PerturbationPipeline:
         self.trained_regression_model = {}
 
         # Melt data if not using KNN (KNN handles multilabel directly)
-        if isinstance(self.regression_model_base_instance, KnnRegressor):
+        if not isinstance(self.regression_model_base_instance, KnnRegressor):
             # Use common perturbations
             common_perturbations = list(y.columns.intersection(X_fgpt.index))
             if len(common_perturbations) == 0:
@@ -764,9 +767,12 @@ def _drop_missing_values_if_any(
 ) -> tuple[pd.DataFrame, pd.Series | pd.DataFrame, pd.DataFrame]:
     """Drop rows with missing values in y_data (for single-label case)."""
     if isinstance(y_data, pd.Series) or y_data.shape[1] == 1:
-        y_data = y_data.dropna()
-        x_data = x_data.loc[y_data.index]
-        X_metadata = X_metadata.loc[y_data.index]
+        # Find rows with non-NaN values
+        valid_mask = y_data.notna() if isinstance(y_data, pd.Series) else y_data.iloc[:, 0].notna()
+        # Filter all dataframes using the same boolean mask
+        y_data = y_data[valid_mask]
+        x_data = x_data[valid_mask]
+        X_metadata = X_metadata[valid_mask]
     return x_data, y_data, X_metadata
 
 

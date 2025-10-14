@@ -48,3 +48,20 @@ clean: ## Clean up temporary files and caches
 	@rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage dist build *.egg-info
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
+
+clean-data: ## Remove all processed data, models, and results
+	@echo "\nThe following files and directories will be permanently deleted:\n"
+	@find data/processed -mindepth 1 -not -name ".gitkeep" 2>/dev/null || true
+	@find models -mindepth 1 -not -path "models/README.md" -not -name ".gitkeep" 2>/dev/null || true
+	@find results -mindepth 1 -not -path "results/README.md" -not -name ".gitkeep" 2>/dev/null || true
+	@echo "\n⚠️  WARNING: This action cannot be undone."
+	@read -p "Are you sure you want to continue? (yes/no) " -r; \
+	if [[ $$REPLY =~ ^[Yy]es$$ ]]; then \
+		echo "🧹 Removing processed data, models, and results..."; \
+		find data/processed -mindepth 1 -not -name ".gitkeep" -delete 2>/dev/null || true; \
+		find models -mindepth 1 -not -path "models/README.md" -not -name ".gitkeep" -delete 2>/dev/null || true; \
+		find results -mindepth 1 -not -path "results/README.md" -not -name ".gitkeep" -delete 2>/dev/null || true; \
+		echo "✅ Removal complete!"; \
+	else \
+		echo "Aborted."; \
+	fi
