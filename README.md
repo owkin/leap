@@ -24,7 +24,7 @@ Run quality checks before committing:
 
 ```bash
 make checks   # Run pre-commit hooks (linting, formatting, type checking)
-make testing  # Run tests with coverage
+make tests  # Run tests with coverage
 ```
 
 ## Usage

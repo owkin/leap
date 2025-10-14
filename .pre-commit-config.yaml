@@ -43,13 +43,13 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        entry: uv run ruff check src/ configs/ scripts/ --fix --exclude src/leap/_version.py
+        entry: uv run ruff check src/leap/ configs/ scripts/ --fix --exclude src/leap/_version.py
       - id: mypy
         name: Static type checking using mypy
         language: system
         types: [python]
         pass_filenames: false
-        entry: uv run mypy src/ configs/ --exclude src/leap/_version.py
+        entry: uv run mypy src/leap/ configs/ --exclude src/leap/_version.py
       - id: pydoclint
         name: Docstring linting with pydoclint
         language: system
