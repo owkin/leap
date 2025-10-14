@@ -21,13 +21,15 @@ class PreclinicalDataset:
     ----------
     label : str | None, optional
         The label to load. Possible values are "gene_dependency". Default is "gene_dependency".
+    normalization : str, optional
+        The normalization method to use for RNAseq data. Currently only "tpm" is supported. Default is "tpm".
     scale_label : bool, optional
         Whether to scale a continuous label, by default False.
     min_n_label : int, optional
         The minimum number of non-missing labels to keep, by default 50.
     use_label_list : str | None, optional
         Path to the list of labels to use, by default None.
-    use_gene_list_rnaseq : str | None, optional
+    use_gene_list : str | None, optional
         Path to the list of genes to use for RNAseq, by default None (using all available genes).
     filter_available_fingerprints : bool, optional
         Whether to keep only the labels with available fingerprints, by default False.
@@ -50,27 +52,38 @@ class PreclinicalDataset:
         Stacked labels (sample x perturbation pairs).
     df_sample_metadata_stacked : pd.DataFrame
         Sample metadata aligned with stacked labels.
+
+    Raises
+    ------
+    ValueError
+        If the normalization method is not supported.
     """
 
     def __init__(
         self,
         label: str | None = "gene_dependency",
+        normalization: str = "tpm",
         scale_label: bool = False,
         min_n_label: int = 50,
         use_label_list: str | None = None,
-        use_gene_list_rnaseq: str | None = None,
+        use_gene_list: str | None = None,
         filter_available_fingerprints: bool = False,
         tissues_to_keep: str | list[str] = "all",
         tissues_to_exclude: str | list[str] | None = None,
     ) -> None:
         self.label = label
+        self.normalization = normalization
         self.scale_label = scale_label
         self.min_n_label = min_n_label
         self.use_label_list = use_label_list
-        self.use_gene_list_rnaseq = use_gene_list_rnaseq
+        self.use_gene_list = use_gene_list
         self.filter_available_fingerprints = filter_available_fingerprints
         self.tissues_to_keep = tissues_to_keep
         self.tissues_to_exclude = tissues_to_exclude
+
+        # Validate normalization method
+        if self.normalization != "tpm":
+            raise ValueError(f"Only 'tpm' normalization is currently supported, got '{self.normalization}'.")
 
         # Define attributes
         self.df_labels: pd.DataFrame
@@ -170,10 +183,13 @@ class PreclinicalDataset:
     def _load_rnaseq(self) -> None:
         """Load RNAseq data from DepMap."""
         df_rnaseq = load_expression()
-        logger.info(f"Loaded expression of {df_rnaseq.shape[1]} genes in {df_rnaseq.shape[0]} cell lines.")
+        logger.info(
+            f"Loaded expression of {df_rnaseq.shape[1]} genes in {df_rnaseq.shape[0]} cell lines "
+            f"(normalization: {self.normalization})."
+        )
 
         # Keep only the listed genes if specified
-        self._use_gene_list_rnaseq(df_rnaseq)
+        self._use_gene_list(df_rnaseq)
         # Add rnaseq suffix
         self.df_rnaseq = df_rnaseq.add_suffix("_rnaseq")
 
@@ -224,13 +240,11 @@ class PreclinicalDataset:
             df_labels = df_labels.loc[:, df_labels.columns.isin(label_list)]
         self.df_labels = df_labels
 
-    def _use_gene_list_rnaseq(self, df_rnaseq: pd.DataFrame) -> None:
+    def _use_gene_list(self, df_rnaseq: pd.DataFrame) -> None:
         """Only keep the listed RNASeq genes."""
-        if self.use_gene_list_rnaseq is not None:
+        if self.use_gene_list is not None:
             # Load the gene list from the specified file
-            gene_list_rnaseq = (
-                pd.read_csv(self.use_gene_list_rnaseq, header=None).iloc[:, 0].str.removesuffix("_rnaseq")
-            )
+            gene_list_rnaseq = pd.read_csv(self.use_gene_list, header=None).iloc[:, 0].str.removesuffix("_rnaseq")
             df_rnaseq = df_rnaseq.loc[:, df_rnaseq.columns.isin(gene_list_rnaseq)]
 
     def _get_common_samples(self, *dfs: pd.DataFrame) -> list[str]:

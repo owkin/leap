@@ -54,6 +54,7 @@ dist/
 
 # Notebooks
 .ipynb_checkpoints/
+*.ipynb
 
 # OS
 .DS_Store

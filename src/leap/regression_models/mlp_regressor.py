@@ -12,6 +12,7 @@ from torch import nn, optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
 from leap.metrics.regression_metrics import performance_metric_wrapper
+from leap.utils.device import get_device
 from leap.utils.seed import seed_everything
 
 from .utils import SpearmanLoss
@@ -68,6 +69,9 @@ class TorchMLPRegressor:
     loss_function_name : Literal["mse", "spearman", "binary_cross_entropy"]
         Loss function to use for training.
         Note: "spearman" actually uses Pearson correlation.
+    device : str | None
+        Device to run training on ('cpu', 'cuda', or 'mps').
+        If None, automatically detects best available device.
 
     Attributes
     ----------
@@ -98,7 +102,7 @@ class TorchMLPRegressor:
     -----
     - This implementation expects target data (y) to have a MultiIndex with a "perturbation" level when using early
     stopping.
-    - The model is automatically moved to GPU if available, and back to CPU after training.
+    - The model is automatically moved to the appropriate device (CUDA, MPS, or CPU) based on availability.
     - BCEWithLogitsLoss includes sigmoid activation internally, so no sigmoid is added to the network when using binary
     cross-entropy loss.
 
@@ -143,6 +147,7 @@ class TorchMLPRegressor:
         metric: Literal["spearman", "mse"] = "spearman",
         scaler_name: Literal["standard", "minmax", "robust"] | None = "robust",
         loss_function_name: Literal["mse", "spearman", "binary_cross_entropy"] = "mse",
+        device: str | None = None,
     ):
         # Validate parameters
         if not hidden_layer_sizes:
@@ -188,8 +193,8 @@ class TorchMLPRegressor:
         # Set the random seeds for reproducibility
         seed_everything(self.random_seed)
 
-        # Detect device (CPU or GPU)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Set device (CPU, CUDA, or MPS)
+        self.device = get_device(device)
 
         # Placeholder for the PyTorch model and optimizer
         self.model: nn.Module
@@ -244,7 +249,7 @@ class TorchMLPRegressor:
         return scaler, criterion
 
     def _create_dataloader(
-        self, X: pd.DataFrame, y: pd.Series | pd.DataFrame, device: torch.device, batch_size: int, shuffle: bool = True
+        self, X: pd.DataFrame, y: pd.Series | pd.DataFrame, device: str, batch_size: int, shuffle: bool = True
     ) -> DataLoader:
         """Create a PyTorch DataLoader from features and targets.
 
@@ -254,8 +259,8 @@ class TorchMLPRegressor:
             Feature data.
         y : pd.Series | pd.DataFrame
             Target data.
-        device : torch.device
-            Device to load the tensors to.
+        device : str
+            Device to load the tensors to ('cpu', 'cuda', or 'mps').
         batch_size : int
             Size of batches.
         shuffle : bool
@@ -652,6 +657,7 @@ class TorchMLPRegressor:
             del X_val_tensor, y_val_tensor, best_model_state
         del model_gpu, train_dataloader, outputs, loss
         torch.cuda.empty_cache()
+        torch.mps.empty_cache()
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Predict using the trained model.
@@ -721,3 +727,5 @@ class TorchMLPRegressor:
             del self.model
         if "torch" in globals() and getattr(torch, "cuda", None) is not None and torch.cuda.is_available():
             torch.cuda.empty_cache()
+        if "torch" in globals() and getattr(torch, "mps", None) is not None and torch.mps.is_available():
+            torch.mps.empty_cache()

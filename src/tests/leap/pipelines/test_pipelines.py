@@ -404,7 +404,7 @@ class TestDefineModelParams:
         """Test grid search parameter definition."""
         param_grid = {"alpha": [0.1, 0.5, 1.0], "l1_ratio": [0.3, 0.5, 0.7]}
 
-        params = define_model_params(param_grid, param_search_type={"search_type": "grid"})
+        params = define_model_params(param_grid)
 
         # Should have 3 * 3 = 9 combinations
         assert len(params) == 9
@@ -412,42 +412,6 @@ class TestDefineModelParams:
         # Check that all combinations are present
         alphas = [p["alpha"] for p in params]
         assert 0.1 in alphas and 0.5 in alphas and 1.0 in alphas
-
-    def test_define_model_params_random_search(self):
-        """Test random search parameter definition."""
-        param_grid = {"alpha": [0.1, 1.0], "l1_ratio": [0.3, 0.7]}
-
-        params = define_model_params(param_grid, param_search_type={"search_type": "random", "n_models": 5}, seed=42)
-
-        # Should have 5 random combinations
-        assert len(params) == 5
-
-    def test_define_model_params_set_to_int(self):
-        """Test converting parameters to int."""
-        param_grid = {"n_neighbors": [5.0, 10.0], "alpha": [0.1, 0.5]}
-
-        params = define_model_params(
-            param_grid, param_search_type={"search_type": "grid", "set_to_int": ["n_neighbors"]}
-        )
-
-        # n_neighbors should be int
-        for p in params:
-            assert isinstance(p["n_neighbors"], int)
-            assert isinstance(p["alpha"], float)
-
-    def test_define_model_params_invalid_search_type(self):
-        """Test that invalid search type raises error."""
-        param_grid = {"alpha": [0.1, 0.5]}
-
-        with pytest.raises(ValueError, match="search_type must be either"):
-            define_model_params(param_grid, param_search_type={"search_type": "invalid"})
-
-    def test_define_model_params_random_missing_n_models(self):
-        """Test that random search without n_models raises error."""
-        param_grid = {"alpha": [0.1, 0.5]}
-
-        with pytest.raises(ValueError, match="n_models must be defined"):
-            define_model_params(param_grid, param_search_type={"search_type": "random"})
 
     def test_define_model_params_default_grid(self):
         """Test default to grid search."""

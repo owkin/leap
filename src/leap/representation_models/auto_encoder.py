@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from leap.utils.device import get_device
 from leap.utils.seed import seed_everything
 
 from . import RepresentationModelBase
@@ -54,8 +55,8 @@ class AutoEncoder(RepresentationModelBase, torch.nn.Module):
         Minimum improvement required to reset patience counter.
     retrain : bool
         Whether to retrain on full data after early stopping finds optimal epochs.
-    device : str
-        Device to run training on ('cpu' or 'cuda').
+    device : str | None
+        Device to run training on ('cpu', 'cuda', or 'mps'). If None, automatically detects best available device.
     random_state : int
         Random seed for reproducibility.
     criterion : torch.nn.Module
@@ -111,7 +112,7 @@ class AutoEncoder(RepresentationModelBase, torch.nn.Module):
         early_stopping_patience: int = 50,
         early_stopping_delta: float = 0.001,
         retrain: bool = True,
-        device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        device: str | None = None,
         random_state: int = 42,
         criterion: torch.nn.Module = torch.nn.MSELoss(),
         optimizer: Callable = torch.optim.Adam,
@@ -138,7 +139,7 @@ class AutoEncoder(RepresentationModelBase, torch.nn.Module):
         self.early_stopping_split = early_stopping_split
         self.early_stopping_patience = early_stopping_patience
         self.early_stopping_delta = early_stopping_delta
-        self.device = device
+        self.device = get_device(device)
         self.criterion = criterion
         self.optimizer = optimizer
         self.retrain = retrain

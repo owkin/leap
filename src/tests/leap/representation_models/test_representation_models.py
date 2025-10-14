@@ -168,15 +168,14 @@ class TestAutoEncoder:
 
     def test_autoencoder_device_handling(self, sample_data):
         """Test that AutoEncoder handles device correctly."""
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        ae = AutoEncoder(repr_dim=5, num_epochs=3, early_stopping_use=False, device=device)
+        ae = AutoEncoder(repr_dim=5, num_epochs=3, early_stopping_use=False, device="cpu")
 
         ae.fit(sample_data)
-        assert ae.device == device
+        assert ae.device == "cpu"
 
     def test_autoencoder_forward_pass(self, sample_data):
         """Test AutoEncoder forward pass."""
-        ae = AutoEncoder(repr_dim=5, num_epochs=3, early_stopping_use=False)
+        ae = AutoEncoder(repr_dim=5, num_epochs=3, early_stopping_use=False, device="cpu")
         ae.fit(sample_data)
 
         # Test forward pass
@@ -231,6 +230,7 @@ class TestMaskedAutoencoder:
             corruption_proba=1.0,  # Mask everything for testing
             num_epochs=1,
             early_stopping_use=False,
+            device="cpu",
         )
 
         sample_tensor = torch.tensor(sample_data.values[:10], dtype=torch.float32)
@@ -276,7 +276,7 @@ class TestMaskedAutoencoder:
 
     def test_masked_autoencoder_forward_eval_mode(self, sample_data):
         """Test forward pass in eval mode (no masking)."""
-        mae = MaskedAutoencoder(repr_dim=5, corruption_proba=0.3, num_epochs=3, early_stopping_use=False)
+        mae = MaskedAutoencoder(repr_dim=5, corruption_proba=0.3, num_epochs=3, early_stopping_use=False, device="cpu")
         mae.fit(sample_data)
 
         sample_tensor = torch.tensor(sample_data.values[:5], dtype=torch.float32)

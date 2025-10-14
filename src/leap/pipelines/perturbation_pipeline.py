@@ -797,7 +797,6 @@ def _param_search(
     X_metadata: pd.DataFrame,
     hpt_tuning_cv_split: Callable,
     hpt_tuning_score: RegressionMetricType | None,
-    param_search_type: dict | None = None,
     ensembling: bool = True,
     ensembling_save_models_to_disk: bool = False,
     ensembling_output_path: Path | None = None,
@@ -806,7 +805,7 @@ def _param_search(
     if hpt_tuning_score is None:
         raise ValueError("A score has to be provided for the grid search.")
 
-    models_params = define_model_params(param_grid=param_grid, param_search_type=param_search_type)
+    models_params = define_model_params(param_grid=param_grid)
 
     best_score = -np.inf
     best_model = None
@@ -900,7 +899,6 @@ def _fit_single_label(
     hpt_tuning_param_grid: dict | None,
     hpt_tuning_cv_split: Callable | None,
     hpt_tuning_score: RegressionMetricType | None,
-    param_search_type: dict | None = None,
     ensembling: bool = True,
     ensembling_save_models_to_disk: bool = False,
     ensembling_output_path: Path | None = None,
@@ -946,7 +944,6 @@ def _fit_single_label(
             X_metadata=X_metadata,
             hpt_tuning_cv_split=hpt_tuning_cv_split,
             hpt_tuning_score=hpt_tuning_score,
-            param_search_type=param_search_type,
             ensembling=ensembling,
             ensembling_save_models_to_disk=ensembling_save_models_to_disk,
             ensembling_output_path=ensembling_output_path,
@@ -971,7 +968,6 @@ def _fit_one_perturbation(
     hpt_tuning_param_grid: dict | None,
     hpt_tuning_cv_split: Callable | None,
     hpt_tuning_score: RegressionMetricType | None,
-    param_search_type: dict | None = None,
     ensembling: bool = True,
     ensembling_save_models_to_disk: bool = False,
     ensembling_output_path: Path | None = None,
@@ -1003,28 +999,19 @@ def _fit_one_perturbation(
         hpt_tuning_param_grid=hpt_tuning_param_grid,
         hpt_tuning_cv_split=hpt_tuning_cv_split,
         hpt_tuning_score=hpt_tuning_score,
-        param_search_type=param_search_type,
         ensembling=ensembling,
         ensembling_save_models_to_disk=ensembling_save_models_to_disk,
         ensembling_output_path=ensembling_output_path,
     )
 
 
-def define_model_params(
-    param_grid: dict,
-    param_search_type: dict | None = None,
-    seed: int | None = None,
-) -> list[dict]:
+def define_model_params(param_grid: dict, seed: int | None = None) -> list[dict]:
     """Define model parameters.
 
     Parameters
     ----------
     param_grid : dict
         Dictionary with the parameters to search.
-    param_search_type : dict | None
-        Dictionary with the search type. Additional keys: if "search_type" is "random" are "n_models" which must be
-        given and will lead to that number of sets of parameters being produced. "set_to_int" parameters which needs to
-        be of type int instead of float, by default {"search_type": "grid"}.
     seed : int | None
         Seed for reproducibility, only used if "random" search type is being requested, by default None.
 
@@ -1032,43 +1019,15 @@ def define_model_params(
     -------
     list[dict]
         List of parameter dictionaries.
-
-    Raises
-    ------
-    ValueError
-        If search_type is not 'grid' or 'random', or if 'n_models' is missing for random search.
     """
-    if param_search_type is None:
-        param_search_type = {"search_type": "grid"}
     if seed is not None:
         np.random.seed(seed)
-    if param_search_type["search_type"] not in {"grid", "random"}:
-        raise ValueError("search_type must be either 'grid' or 'random'.")
 
     parameter_names = list(param_grid.keys())
 
-    if param_search_type["search_type"] == "grid":
-        param_combinations: list[tuple] | np.ndarray = list(product(*param_grid.values()))
-    else:
-        if "n_models" not in param_search_type:
-            raise ValueError("n_models must be defined for random search.")
-        n_models = param_search_type["n_models"]
-
-        # Extract parameter names, min, and max values
-        min_values = np.array([np.min(param_grid[param]) for param in parameter_names])
-        max_values = np.array([np.max(param_grid[param]) for param in parameter_names])
-
-        # Generate n random models using uniform distribution between min and max
-        param_combinations = np.random.uniform(min_values, max_values, size=(n_models, len(parameter_names)))
+    param_combinations: list[tuple] | np.ndarray = list(product(*param_grid.values()))
 
     # Convert each row of values into a dictionary
     models_params = [dict(zip(parameter_names, model_values, strict=False)) for model_values in param_combinations]
-
-    # Convert selected parameters to int values
-    if "set_to_int" in param_search_type:
-        n_models = param_search_type.get("n_models", len(models_params))
-        for key in set(param_search_type["set_to_int"]) & set(parameter_names):
-            for i in range(n_models):
-                models_params[i][key] = round(models_params[i][key])
 
     return models_params

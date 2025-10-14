@@ -3,10 +3,10 @@ build-backend = "hatchling.build"
 requires = ["hatchling", "hatch-vcs"]
 
 [tool.hatch.build.targets.sdist]
-include = ["README.md", "src/leap"]
+include = ["README.md", "src/leap", "configs"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/leap"]
+packages = ["src/leap", "configs"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -180,7 +180,7 @@ convention = "numpy"
 python_version = "3.11"
 ignore_errors = false
 files = ["src/", "configs/", "scripts/"]
-mypy_path = ["src", "configs", "scripts"]
+mypy_path = ["."]
 
 # Enforce typing on public functions
 disallow_incomplete_defs = true
@@ -196,7 +196,7 @@ strict_equality = true
 
 [tool.coverage.run]
 branch = true
-source_pkgs = ["leap"]
+source_pkgs = ["leap", "configs"]
 
 [tool.coverage.report]
 omit = []
