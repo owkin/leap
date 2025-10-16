@@ -25,6 +25,7 @@ def load_expression() -> pd.DataFrame:
         path = DATA_PATH / "OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv"
         depmap_expr = (
             pd.read_csv(path, index_col=0)
+            .query("IsDefaultEntryForModel == 'Yes'")
             .drop(columns=["SequencingID", "IsDefaultEntryForModel", "ModelConditionID", "IsDefaultEntryForMC"])
             .rename(columns={"ModelID": "DepMap_ID"})
             .set_index("DepMap_ID")

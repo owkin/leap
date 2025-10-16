@@ -155,3 +155,219 @@ class TestPreprocessor:
 
             transformed = preprocessor.fit_transform(sample_data)
             assert transformed.shape == sample_data.shape
+
+
+class MockDataset:
+    """Mock dataset helper for testing PreclinicalDataset methods."""
+
+    def __init__(self):
+        """Initialize mock dataset."""
+        samples = [f"sample_{i}" for i in range(10)]
+        perturbations = ["pert_A", "pert_B", "pert_C", "pert_D"]
+
+        # Create dataframes
+        self.df_labels = pd.DataFrame(
+            np.random.randn(len(samples), len(perturbations)), index=samples, columns=perturbations
+        )
+
+        self.df_rnaseq = pd.DataFrame(
+            np.random.randn(len(samples), 20), index=samples, columns=[f"gene_{i}_rnaseq" for i in range(20)]
+        )
+
+        self.df_sample_metadata = pd.DataFrame(
+            {"tissue": ["Lung", "Lung", "Breast", "Breast", "Liver"] * 2, "domain": ["source"] * 10},
+            index=samples,
+        )
+
+        self.df_fingerprints = pd.DataFrame(
+            np.random.randint(0, 2, (len(perturbations), 8)),
+            index=perturbations,
+            columns=[f"pathway_{i}" for i in range(8)],
+        )
+
+        # Stacked version
+        self.df_labels_stacked = self.df_labels.stack()
+        self.df_labels_stacked.index.names = ["sample", "perturbation"]
+        self.df_labels_stacked = pd.DataFrame(self.df_labels_stacked, columns=["label"])
+
+        self.df_sample_metadata_stacked = pd.merge(
+            self.df_sample_metadata,
+            self.df_labels_stacked.reset_index(),
+            left_index=True,
+            right_on="sample",
+        ).set_index(["sample", "perturbation"])
+
+    def _sort_rows_and_columns(self):
+        """Sort rows and columns for consistency."""
+        self.df_labels = self.df_labels.sort_index(axis=0).sort_index(axis=1)
+        if self.df_fingerprints is not None:
+            self.df_fingerprints = self.df_fingerprints.sort_index(axis=0)
+
+    def stack_dataframes(self):
+        """Stack labels and align sample metadata."""
+        self.df_labels_stacked = self.df_labels.stack()
+        self.df_labels_stacked.index.names = ["sample", "perturbation"]
+        self.df_labels_stacked = pd.DataFrame(self.df_labels_stacked, columns=["label"])
+
+        self.df_sample_metadata_stacked = pd.merge(
+            self.df_sample_metadata,
+            self.df_labels_stacked.reset_index(),
+            left_index=True,
+            right_on="sample",
+        ).set_index(["sample", "perturbation"])
+
+
+class TestPreclinicalDataset:
+    """Test PreclinicalDataset class methods."""
+
+    @pytest.fixture
+    def mock_dataset(self):
+        """Create a mock PreclinicalDataset for testing."""
+        np.random.seed(42)
+        return MockDataset()
+
+    def test_keep_perturbations(self, mock_dataset):
+        """Test keep_perturbations method."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        # Copy the method to the mock
+        mock_dataset.keep_perturbations = PreclinicalDataset.keep_perturbations.__get__(mock_dataset)
+
+        # Keep only subset of perturbations
+        to_keep = ["pert_A", "pert_C"]
+        mock_dataset.keep_perturbations(to_keep)
+
+        # Check that only selected perturbations remain
+        assert list(mock_dataset.df_labels.columns) == to_keep
+        assert list(mock_dataset.df_fingerprints.index) == to_keep
+
+        # Check that stacked dataframe was updated
+        assert mock_dataset.df_labels_stacked.shape[0] == len(to_keep) * len(mock_dataset.df_labels.index)
+
+    def test_keep_perturbations_missing_fingerprints(self, mock_dataset):
+        """Test keep_perturbations when some perturbations don't have fingerprints."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset.keep_perturbations = PreclinicalDataset.keep_perturbations.__get__(mock_dataset)
+
+        # Remove one perturbation from fingerprints
+        mock_dataset.df_fingerprints = mock_dataset.df_fingerprints.drop("pert_D")
+
+        # Keep all perturbations including the one without fingerprints
+        to_keep = ["pert_A", "pert_B", "pert_C", "pert_D"]
+        mock_dataset.keep_perturbations(to_keep)
+
+        # Check that labels kept all
+        assert list(mock_dataset.df_labels.columns) == to_keep
+
+        # Check that fingerprints only has those available
+        assert "pert_D" not in mock_dataset.df_fingerprints.index
+        assert len(mock_dataset.df_fingerprints.index) == 3
+
+    def test_keep_perturbations_no_fingerprints(self, mock_dataset):
+        """Test keep_perturbations when fingerprints become empty."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset.keep_perturbations = PreclinicalDataset.keep_perturbations.__get__(mock_dataset)
+
+        # Keep perturbations that don't exist in fingerprints
+        to_keep = ["pert_E", "pert_F"]
+        mock_dataset.df_labels = mock_dataset.df_labels.copy()
+        mock_dataset.df_labels["pert_E"] = 1.0
+        mock_dataset.df_labels["pert_F"] = 2.0
+
+        mock_dataset.keep_perturbations(to_keep)
+
+        # Fingerprints should be None when empty
+        assert mock_dataset.df_fingerprints is None
+
+    def test_merge(self, mock_dataset):
+        """Test merge method."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset.merge = PreclinicalDataset.merge.__get__(mock_dataset)
+
+        # Create another mock dataset to merge
+        np.random.seed(100)
+        other_dataset = MockDataset()
+
+        # Modify the second dataset
+        other_dataset.df_labels.index = [f"sample_new_{i}" for i in range(10)]
+        other_dataset.df_rnaseq.index = [f"sample_new_{i}" for i in range(10)]
+        other_dataset.df_sample_metadata.index = [f"sample_new_{i}" for i in range(10)]
+
+        # Store original sizes
+        original_n_samples = len(mock_dataset.df_labels)
+        original_n_genes = len(mock_dataset.df_rnaseq.columns)
+
+        # Merge
+        mock_dataset.merge(other_dataset)
+
+        # Check that datasets were concatenated
+        assert len(mock_dataset.df_labels) == original_n_samples + 10
+        assert len(mock_dataset.df_sample_metadata) == original_n_samples + 10
+
+        # Check that stacked version was updated
+        assert mock_dataset.df_labels_stacked.shape[0] > original_n_samples * 4
+
+        # Check that rnaseq kept only common columns
+        assert len(mock_dataset.df_rnaseq.columns) == original_n_genes
+
+    def test_rename_for_code(self):
+        """Test rename_for_code utility function."""
+        from leap.data.preclinical_dataset import rename_for_code
+
+        assert rename_for_code("Lung") == "lung"
+        assert rename_for_code("Small Intestine") == "small_intestine"
+        assert rename_for_code("Central-Nervous") == "central_nervous"
+        assert rename_for_code("Head-and-Neck") == "head_and_neck"
+        assert rename_for_code("T cell") == "t_cell"
+
+    def test_filter_tissues_keep_specific(self, mock_dataset):
+        """Test _filter_tissues method with specific tissues."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset._filter_tissues = PreclinicalDataset._filter_tissues.__get__(mock_dataset)
+        mock_dataset.tissues_to_keep = ["Lung", "Breast"]
+        mock_dataset.tissues_to_exclude = None
+
+        original_n_samples = len(mock_dataset.df_sample_metadata)
+
+        # Filter
+        mock_dataset._filter_tissues()
+
+        # Should keep only Lung and Breast samples
+        remaining_tissues = mock_dataset.df_sample_metadata["tissue"].unique()
+        assert set(remaining_tissues) <= {"Lung", "Breast"}
+        assert len(mock_dataset.df_sample_metadata) < original_n_samples
+
+    def test_filter_tissues_exclude_specific(self, mock_dataset):
+        """Test _filter_tissues method with excluded tissues."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset._filter_tissues = PreclinicalDataset._filter_tissues.__get__(mock_dataset)
+        mock_dataset.tissues_to_keep = "all"
+        mock_dataset.tissues_to_exclude = ["Liver"]
+
+        # Filter
+        mock_dataset._filter_tissues()
+
+        # Should not have Liver samples
+        remaining_tissues = mock_dataset.df_sample_metadata["tissue"].unique()
+        assert "Liver" not in remaining_tissues
+
+    def test_filter_tissues_keep_all(self, mock_dataset):
+        """Test _filter_tissues method keeping all tissues."""
+        from leap.data.preclinical_dataset import PreclinicalDataset
+
+        mock_dataset._filter_tissues = PreclinicalDataset._filter_tissues.__get__(mock_dataset)
+        mock_dataset.tissues_to_keep = "all"
+        mock_dataset.tissues_to_exclude = None
+
+        original_n_samples = len(mock_dataset.df_sample_metadata)
+
+        # Filter
+        mock_dataset._filter_tissues()
+
+        # Should keep all samples
+        assert len(mock_dataset.df_sample_metadata) == original_n_samples

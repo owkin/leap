@@ -1,5 +1,7 @@
 """MLPRegressor using pytorch so that it can be accelerated with GPUs."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal
@@ -12,13 +14,16 @@ from torch import nn, optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
 from leap.metrics.regression_metrics import performance_metric_wrapper
+
+# RegressionModel is defined in __init__.py before this module is imported
+from leap.regression_models import RegressionModel
 from leap.utils.device import get_device
 from leap.utils.seed import seed_everything
 
 from .utils import SpearmanLoss
 
 
-class TorchMLPRegressor:
+class TorchMLPRegressor(RegressionModel):
     """Multi-layer Perceptron Regressor implemented in PyTorch with GPU support.
 
     This implementation provides a flexible neural network regressor with support for early stopping, learning rate
@@ -716,7 +721,7 @@ class TorchMLPRegressor:
             "loss_function_name": self.loss_function_name,
         }
 
-    def set_params(self, **kwargs: Any) -> "TorchMLPRegressor":
+    def set_params(self, **kwargs: Any) -> TorchMLPRegressor:
         """Set parameters for this estimator."""
         for parameter, value in kwargs.items():
             setattr(self, parameter, value)

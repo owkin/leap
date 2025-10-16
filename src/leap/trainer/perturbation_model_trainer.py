@@ -714,24 +714,7 @@ class PerturbationModelTrainer:
             self.aggregate_performances(test_performance=test_performance, format_numbers=True),
         )
         # Log average overall and per-perturbation performances
-        if "overall" in test_performance_aggregated:
-            if "spearman" in test_performance_aggregated["overall"]:
-                pf = test_performance_aggregated["overall"]["spearman"]["mean"]
-                logger.info(
-                    f"Mean Spearman's correlation overall: {pf}",
-                )
-            if "auc" in test_performance_aggregated["overall"]:
-                pf = test_performance_aggregated["overall"]["auc"]["mean"]
-                logger.info(f"Mean AUC overall: {pf}")
-        if "per_perturbation" in test_performance_aggregated:
-            if "spearman" in test_performance_aggregated["per_perturbation"]:
-                pf = test_performance_aggregated["per_perturbation"]["spearman"]["mean"]
-                logger.info(
-                    f"Mean Spearman's correlation per perturbation: {pf}",
-                )
-            if "auc" in test_performance_aggregated["per_perturbation"]:
-                pf = test_performance_aggregated["per_perturbation"]["auc"]["mean"]
-                logger.info(f"Mean AUC per perturbation: {pf}")
+        self.log_performance_metrics(test_performance_aggregated)
 
         return test_performance, test_performance_aggregated
 
@@ -865,6 +848,29 @@ class PerturbationModelTrainer:
                         {f"std_{pert}": format_value(std) for pert, std in df.std().items()}
                     )
         return aggregated
+
+    def log_performance_metrics(self, performance_data: dict[str, dict[str, dict[str, str]]]) -> None:
+        """Log aggregated performance metrics in a standardized format.
+
+        Parameters
+        ----------
+        performance_data : dict[str, dict[str, dict[str, str]]]
+            Aggregated performance data as returned by aggregate_performances().
+            Contains "overall" and "per_perturbation" keys with metrics and their mean values.
+        """
+        # Log average overall performances
+        if "overall" in performance_data:
+            for metric, values in performance_data["overall"].items():
+                if "mean" in values:
+                    mean_val = values["mean"]
+                    logger.info(f"Mean {metric} overall: {mean_val}")
+
+        # Log average per-perturbation performances
+        if "per_perturbation" in performance_data:
+            for metric, values in performance_data["per_perturbation"].items():
+                if "mean" in values:
+                    mean_val = values["mean"]
+                    logger.info(f"Mean {metric} per perturbation: {mean_val}")
 
     def save_attribute(self, attribute_name: str, output_path: Path) -> None:
         """Pickle one of the attributes of the current instance of the class.

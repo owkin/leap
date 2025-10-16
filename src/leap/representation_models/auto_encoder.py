@@ -174,11 +174,17 @@ class AutoEncoder(RepresentationModelBase, torch.nn.Module):
 
         X_feature_names = X.columns.tolist()
         if X_feature_names != self.feature_names_in_:
-            raise ValueError(
-                f"The feature names should match those that were passed during fit.\n"
-                f"Feature names seen during fit: {self.feature_names_in_}\n"
-                f"Feature names seen now: {X_feature_names}"
-            )
+            error_message = ""
+            if set(self.feature_names_in_) != set(X_feature_names):
+                error_message += (
+                    f"Feature names seen during fit and not now: {set(self.feature_names_in_) - set(X_feature_names)}\n"
+                )
+                error_message += (
+                    f"Feature names seen now and not during fit: {set(X_feature_names) - set(self.feature_names_in_)}"
+                )
+            else:
+                error_message += "Features are the same but in a different order."
+            raise ValueError(f"The feature names should match those that were passed during fit.\n{error_message}")
 
     def _convert_hidden_config(self) -> list[int]:
         """Convert hidden layer config to list of layer sizes.

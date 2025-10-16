@@ -49,7 +49,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        entry: uv run mypy src/leap/ configs/ --exclude src/leap/_version.py
+        entry: uv run mypy src/leap/ configs/ scripts/ --exclude src/leap/_version.py
       - id: pydoclint
         name: Docstring linting with pydoclint
         language: system
