@@ -57,11 +57,14 @@ The pipeline is configured to run on task 1 with the `mae_ps_enet` model across 
 If you use LEAP in your research, please cite our paper:
 
 ```bibtex
-@article{bodinier2025predicting,
-  title={Predicting gene essentiality and drug response from perturbation screens in preclinical cancer models with LEAP: Layered Ensemble of Autoencoders and Predictors},
-  author={Bodinier, Barbara and Dissez, Gaetan and Bleistein, Linus and Dauvin, Antonin},
-  journal={arXiv preprint arXiv:2502.15646},
-  year={2025}
+@misc{bodinier2025predictinggeneessentialitydrug,
+      title={Predicting gene essentiality and drug response from perturbation screens in preclinical cancer models with LEAP: Layered Ensemble of Autoencoders and Predictors},
+      author={Barbara Bodinier and Gaetan Dissez and Lucile Ter-Minassian and Linus Bleistein and Roberta Codato and John Klein and Eric Durand and Antonin Dauvin},
+      year={2025},
+      eprint={2502.15646},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2502.15646},
 }
 ```
 

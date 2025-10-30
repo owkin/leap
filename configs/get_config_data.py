@@ -146,7 +146,7 @@ def _get_path_list_of_genes_rnaseq(list_of_genes: str) -> Path | None:
 
     if list_of_genes not in possible_gene_lists:
         raise ValueError(
-            f"{list_of_genes} does not exis. Please provide a valid `list_of_genes` in {possible_gene_lists}."
+            f"{list_of_genes} does not exist. Please provide a valid `list_of_genes` in {possible_gene_lists}."
         )
 
     if list_of_genes == "all":
@@ -172,7 +172,7 @@ def _get_path_list_of_perturbations(list_of_perturbations: str) -> Path | None:
     }
     if list_of_perturbations not in possible_perturbations:
         raise ValueError(
-            f"{list_of_perturbations} does not exis. Please provide a valid "
+            f"{list_of_perturbations} does not exist. Please provide a valid "
             f"`list_of_perturbations` in {possible_perturbations}."
         )
 

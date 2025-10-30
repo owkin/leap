@@ -2,4 +2,5 @@
 
 Directory for experiment outputs and results.
 
-**Note:** Result files are gitignored. Only this README is tracked.
+> [!NOTE]
+> Result files are gitignored. Only this README is tracked.
